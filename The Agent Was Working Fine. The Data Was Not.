@@ -1,0 +1,41 @@
+The Agent Was Working Fine. The Data Was Not.
+
+When an AI agent starts producing wrong outputs in production, the first instinct is usually to examine the agent. The model, the prompts, the retrieval logic, the reasoning chain. This is understandable. The agent is the visible part of the system. It is where the engineering effort was concentrated. It is where the debugging instinct naturally goes.
+
+In a significant proportion of the production failures we investigate at Abhigya AI Lab, the agent is working exactly as designed. The problem is upstream. The data the agent is consuming is wrong, stale, incomplete, or structurally different from what the agent was built to expect. The agent is faithfully processing bad inputs and producing confidently wrong outputs. And because the agent continues to function without errors, the failure can persist for a long time before anyone notices.
+
+Data pipeline failures are one of the most prevalent causes of AI agents operating incorrectly in production. This article covers three patterns we have observed across consulting engagements. The goal is not to present technical solutions in detail but to describe the failure mode precisely enough that teams can recognise whether they are at risk.
+
+The freshness failure that looked like a pipeline success
+
+In one engagement a client had built a multi-agent system that made operational decisions based on data pulled from an upstream source through a scheduled pipeline. The pipeline ran on schedule every night. The monitoring showed successful completions. The database was being updated. By every available metric the pipeline was healthy.
+
+What nobody had noticed was that the upstream source had changed its own internal refresh cadence several months earlier. The data it was exposing to the pipeline was no longer current as of the pipeline's execution time. It was several hours older than the team assumed. The pipeline was successfully collecting and loading stale data, and doing so reliably and on schedule.
+
+The agent was making decisions based on a picture of the world that was consistently older than anyone realised. In the specific operational context the agent was serving, this lag was significant enough to produce wrong decisions. The decisions looked reasonable. They were based on data that had passed every validation check. They were simply based on a state of the world that no longer existed by the time the decisions were being made.
+
+The diagnostic question this raises is not whether the pipeline is running. It is whether the data the pipeline delivers is as current as the agent's decisions require it to be. These are two different questions and most monitoring infrastructure only answers the first one.
+
+The schema drift that passed every validation
+
+The second pattern involves a change in source system behaviour that is invisible to standard pipeline monitoring because it does not change the structure of the data — only the meaning of a field within that structure.
+
+In one engagement a client's agent processed data from an enterprise source system that had undergone a version migration. The migration was managed by a different team. The agent team was not informed of all the changes. One of those changes affected how a key numeric field was populated — specifically, the unit of measurement that the field represented had changed as part of the migration. The field name remained the same. The data type remained the same. The values were still valid numbers within a plausible range. The pipeline loaded the data without incident.
+
+The agent was now comparing values in one unit against thresholds defined in a different unit. The comparisons were mathematically valid. They were semantically wrong. The agent's decisions based on those comparisons were consistently incorrect in a specific direction — always in the same direction, always by a consistent factor, because the unit change was consistent.
+
+The failure persisted for several weeks before a domain expert reviewing outputs noticed the pattern. Nobody looking at the pipeline monitoring would have seen anything unusual. Nobody looking at the agent's individual outputs would have seen anything unusual without the domain knowledge to recognise that the values were implausible for the context.
+
+Schema drift and semantic consistency problems break AI agent systems in ways that operate below the harness layer, invisible to the control systems teams build to govern agent behaviour. The validation that catches structural problems — wrong types, missing fields, unexpected nulls — does not catch semantic problems. A number that is valid but wrong looks identical to a number that is valid and correct.
+
+The unvalidated ingestion boundary
+
+The third pattern is the absence of any meaningful quality check at the point where external data enters the pipeline.
+
+In one engagement a client's agent relied on data ingested from a third-party source through an API integration. The integration had been built quickly during the initial development phase. The focus had been on making the connection work reliably and processing the data correctly. Data quality validation at the ingestion boundary had not been a priority.
+
+Over time the third-party source occasionally returned records with inconsistencies — fields that were technically present but contained default or placeholder values rather than real data, records that represented incomplete transactions, values that were within the valid range for the field but inconsistent with the other fields in the same record. None of these caused the pipeline to fail. All of them passed the minimal validation that existed. All of them entered the agent's data store and influenced its outputs.
+
+The agent was not producing wrong outputs on every query. It was producing wrong outputs on a subset of queries that happened to involve records with these quality issues. The inconsistency was difficult to identify because it was intermittent and the affected records were not distinguishable from clean records by any field-level check.
+
+IBM's research on enterprise AI deployment shows that organisations with mature data quality programs have a 45 percent higher likelihood of successfully moving AI use cases from pilot to production. The investment in data quality infrastructure at the ingestion boundary pays returns not just in preventing failures but in reducing the diagnostic cost when something goes wrong — because when validation exists, the point of failure is identified immediately rather than after a multi-week investigation.
