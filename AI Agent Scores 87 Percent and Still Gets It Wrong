@@ -1,0 +1,57 @@
+When Your AI Agent Scores 87 Percent and Still Gets It Wrong
+
+
+There is a specific kind of confidence that comes from a dashboard showing a strong accuracy number. The team feels good. The stakeholders feel reassured. The product is in production and performing well above the threshold everyone agreed on at the start. Then something goes wrong in a way that the dashboard did not predict and could not explain.
+
+This pattern appears more often than most teams expect. And in the consulting engagements we take on at Abhigya AI Lab, it is one of the most consistent sources of production AI failures we are called in to diagnose. Not because the teams were careless. Because evaluation is harder than it looks, and the ways it fails are not always visible until a business consequence makes them impossible to ignore.
+
+This article covers three patterns we have observed across enterprise AI agent deployments. We are not disclosing specific clients or system architectures. We are sharing the diagnostic thinking that helped us identify what was wrong and what category of change was needed.
+
+No measurement at all
+
+The first and most common pattern is the complete absence of evaluation infrastructure. The agent is built, tested informally during development, demonstrated successfully in staging, and deployed to production. A feedback mechanism of some kind exists — users can flag bad answers, support tickets come in, account managers report complaints. But there is no systematic measurement of whether the agent's outputs are correct across the full range of queries it is handling.
+
+In one engagement we reviewed a system that had been running in production for over three months serving a significant volume of daily queries. When we asked the team what their wrong answer rate was, nobody could tell us. Not because they had measured it and forgotten. Because it had never been measured.
+
+The investigation found a substantial error rate on a specific category of queries. This error rate had existed since roughly six weeks into production when a change in the underlying data source made the agent's knowledge outdated for that query type. The errors had been accumulating silently. They were visible in retrospect through customer churn patterns and support ticket themes. But they were never visible in real time because nobody had built a mechanism to see them in real time.
+
+The principle here is straightforward. Wrong answer rates do not announce themselves. They accumulate silently until a business consequence makes them visible. By the time the consequence is visible the damage from weeks or months of wrong outputs has already occurred. Evaluation infrastructure is not something you build after a problem appears. It is what you build so problems appear to you before they appear to your customers.
+
+The practical question every team should be able to answer before going to production is this: if my agent's accuracy on question type X dropped from 90 percent to 60 percent today, how long would it take me to find out. If the honest answer is weeks or months, the evaluation infrastructure is not ready for production.
+
+The misleading blended score
+
+The second pattern is more subtle and in some ways more dangerous because it involves teams that have built evaluation infrastructure and believe it is working. The evaluation is running. The scores look good. And the system is still failing in ways the scores do not capture.
+
+In one engagement the evaluation framework reported a strong overall accuracy figure. The team had a golden dataset, automated evaluators, and a regular reporting cycle. Everyone involved believed the system was performing well. The problem surfaced not through the evaluation system but through a specific business user who raised concerns about the quality of a particular type of analysis she had been relying on for several months.
+
+When we examined the evaluation infrastructure we found that the golden dataset had been constructed primarily from the most common and most straightforward query types. A much smaller proportion of the dataset represented the complex analytical queries that the business user was actually asking. The overall accuracy score was a weighted average across all query types. The simple queries scored very high. The complex queries scored significantly lower. Because the simple queries dominated the dataset, the blended score looked strong while the complex query performance was poor.
+
+The evaluation was not wrong. It was accurately measuring what it was measuring. The problem was that what it was measuring was not representative of what actually mattered for that user's specific use case.
+
+This is a dataset representativeness problem and it is endemic to AI evaluation in enterprise settings. The golden dataset is built once, usually at the start of the project, usually by the engineering team, usually from the query types they find easiest to define and verify. The queries that are hardest to evaluate — complex, multi-step, analytical, domain-specific — are underrepresented because they take more effort to include correctly. The result is an evaluation that accurately measures performance on easy queries and provides false confidence about performance on the hard ones.
+
+The fix is not to build a better evaluator. It is to build a more representative dataset. The category distribution of the golden dataset must be audited against the actual distribution of queries coming from production. If 60 percent of production queries are complex analytical queries, 60 percent of the golden dataset must be complex analytical queries. A dataset that does not reflect the real query distribution will produce scores that mislead rather than inform.
+
+Evaluation that worked at launch and drifted into irrelevance
+
+The third pattern affects teams with well-built evaluation infrastructure that worked correctly at launch and gradually became less useful as the product and the world changed.
+
+In one engagement the evaluation system had been built carefully. The golden dataset was representative at launch. The automated evaluators were well-calibrated. Evaluation runs happened regularly. The scores were tracked over time. By every visible metric the evaluation infrastructure was doing its job.
+
+What nobody had built was a mechanism to detect when the golden dataset itself had become stale. The product had evolved. Pricing had changed. Features had been added and removed. The underlying data sources the agent relied on had been updated. But the golden dataset still reflected the world as it existed at the time of the original launch. The evaluation was accurately measuring whether the agent answered correctly according to information that was no longer current.
+
+The problem surfaced when a user raised a specific factual inaccuracy. The answer the agent gave was correct according to the golden dataset. It was wrong according to the current reality of the product. The evaluation had been reporting high accuracy for months. The accuracy it was reporting was accuracy against an outdated ground truth.
+
+This is a ground truth staleness problem. It is easy to overlook because the evaluation infrastructure appears to be functioning normally. Evaluation runs complete. Scores are produced. Reports are generated. Everything looks operational. The failure is invisible because it is in the content of the ground truth rather than in the mechanics of the evaluation process.
+
+The discipline this requires is explicit ownership of the golden dataset as a living artifact rather than a static one. Every time the product changes, the golden dataset must be reviewed. Every time the underlying data source changes, the affected questions must be reverified. The evaluation infrastructure is only as useful as the accuracy of the ground truth it measures against.
+
+A closing observation
+
+Evaluation is not a phase that ends when the system goes to production. It is an ongoing operational discipline. The teams that get this right treat their golden dataset, their evaluators, and their production sampling pipelines with the same engineering rigour they apply to the agent itself. The teams that get it wrong treat evaluation as a gate to pass before launch and a dashboard to glance at occasionally after.
+
+Organizations that successfully scale AI agents appoint a dedicated AI operations function responsible for evaluation frameworks, production monitoring, and incident response. Teams that leave this responsibility diffused across existing functions consistently fail to scale.
+
+The agent is only trustworthy if you can demonstrate that it is trustworthy. Demonstration requires measurement. Measurement requires infrastructure that is representative, current, and continuously operated. That infrastructure is not a nice-to-have. It is the foundation that everything else depends on.
+
